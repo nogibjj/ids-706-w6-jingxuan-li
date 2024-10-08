@@ -11,50 +11,57 @@ jobs:
   build: 
     runs-on: ubuntu-latest
 
-    services:
-      mysql:
-        image: mysql:8.0
-        options: > 
-          --health-cmd="mysqladmin ping --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-        env:
-          MYSQL_ROOT_PASSWORD: Jourdan980803..
-          MYSQL_DATABASE: restaurants
-        ports: # Map to a different port or let Docker assign a random port
-          - 3307:3306  # Use 3307 on the host to avoid conflicts
-
     steps: 
       - uses: actions/checkout@v3
 
+      # Install MySQL
+      - name: Install MySQL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-server
+          sudo systemctl start mysql
+          sudo mysqladmin --silent --wait=30 ping || exit 1
+
+      # Set up MySQL Root Password and Create Database
+      - name: Set up MySQL
+        run: |
+          sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH 'mysql_native_password' BY 'Jourdan980803..';"
+          sudo mysql -e "CREATE DATABASE IF NOT EXISTS restaurants;"
+
+      # Set up Python
       - name: Set up Python
         uses: actions/setup-python@v4
 
+      # Install dependencies
       - name: Install packages
         run: make install 
 
+      # Wait for MySQL to be ready
       - name: Wait for MySQL to be ready
         run: |
-          until mysql -h 127.0.0.1 -P 3307 -u root -pJourdan980803.. -e "SHOW DATABASES;" 2>/dev/null; do
+          until mysql -u root -pJourdan980803.. -e "SHOW DATABASES;" 2>/dev/null; do
             echo "Waiting for MySQL to be ready..."
             sleep 5
           done
 
+      # Format code
       - name: Format code
         run: make format
 
+      # Lint code
       - name: Lint code
         run: make lint
 
+      # Run tests
       - name: Run tests
         env:
           MYSQL_HOST: 127.0.0.1
-          MYSQL_PORT: 3307  # Use the remapped port
+          MYSQL_PORT: 3306
           MYSQL_USER: root
           MYSQL_PASSWORD: Jourdan980803..
           MYSQL_DB: restaurants
         run: make test
 
+      # Generate output
       - name: Generate output
         run: make generate
