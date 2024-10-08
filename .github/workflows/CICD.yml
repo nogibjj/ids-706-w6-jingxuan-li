@@ -46,8 +46,32 @@ jobs:
           DATABASE_PASSWORD: root
           DATABASE_ENDPOINT: 127.0.0.1 # Use 127.0.0.1 for TCP connection
         run: |
-          # Run database migrations
           python manage.py migrate
-          
-          # Run the tests
           python manage.py test
+
+      # Re-check out the code
+      - uses: actions/checkout@v3
+
+      # Set up Python again (optional if needed for further steps)
+      - name: Set up Python
+        uses: actions/setup-python@v4
+
+      # Install any additional packages using the Makefile
+      - name: Install packages
+        run: make install
+
+      # Format the code using Makefile
+      - name: Format code
+        run: make format
+
+      # Lint the code using Makefile
+      - name: Lint code
+        run: make lint
+
+      # Run tests using the Makefile
+      - name: Run tests
+        run: make test
+
+      # Generate output (if applicable)
+      - name: Generate output
+        run: make generate
