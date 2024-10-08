@@ -11,59 +11,43 @@ jobs:
   build: 
     runs-on: ubuntu-latest
 
-    steps: 
+    steps:
+      # Check out the code
       - uses: actions/checkout@v3
 
-      # Install MySQL
-      - name: Install MySQL
+      # Start MySQL service
+      - name: Start MySQL service
         run: |
-          sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server
           sudo systemctl start mysql
-          sudo mysqladmin --silent --wait=30 ping || exit 1
+          sudo mysqladmin --user=root --password=root ping
 
-      # Set up MySQL with a new user
-      - name: Set up MySQL User and Database
+      # Set up MySQL root password and create test database
+      - name: Set up MySQL Database
         run: |
-          sudo mysql -e "CREATE USER 'ci_user'@'localhost' IDENTIFIED BY 'ci_password';"
-          sudo mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'ci_user'@'localhost';"
-          sudo mysql -e "FLUSH PRIVILEGES;"
-          sudo mysql -e "CREATE DATABASE IF NOT EXISTS restaurants;"
+          sudo mysql --user=root --password=root -e "CREATE DATABASE IF NOT EXISTS restaurants;"
+          sudo mysql --user=root --password=root -e "SHOW DATABASES;"
 
       # Set up Python
       - name: Set up Python
         uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
 
-      # Install dependencies
-      - name: Install packages
-        run: make install 
-
-      # Wait for MySQL to be ready
-      - name: Wait for MySQL to be ready
+      # Install Python dependencies
+      - name: Install Python dependencies
         run: |
-          until mysql -u ci_user -pci_password -e "SHOW DATABASES;" 2>/dev/null; do
-            echo "Waiting for MySQL to be ready..."
-            sleep 5
-          done
+          pip install -r requirements.txt
 
-      # Format code
-      - name: Format code
-        run: make format
-
-      # Lint code
-      - name: Lint code
-        run: make lint
-
-      # Run tests
+      # Run the tests (using MySQL connection details)
       - name: Run tests
         env:
-          MYSQL_HOST: 127.0.0.1
-          MYSQL_PORT: 3306
-          MYSQL_USER: ci_user
-          MYSQL_PASSWORD: ci_password
-          MYSQL_DB: restaurants
-        run: make test
-
-      # Generate output
-      - name: Generate output
-        run: make generate
+          DATABASE_NAME: restaurants
+          DATABASE_USERNAME: root
+          DATABASE_PASSWORD: root
+          DATABASE_ENDPOINT: 127.0.0.1 # Use 127.0.0.1 for TCP connection
+        run: |
+          # Run database migrations
+          python manage.py migrate
+          
+          # Run the tests
+          python manage.py test
