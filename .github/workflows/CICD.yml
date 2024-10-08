@@ -33,32 +33,17 @@ jobs:
         with:
           python-version: '3.8'
 
-      # Install Python dependencies
+      # Install Python dependencies using Makefile
       - name: Install Python dependencies
-        run: |
-          pip install -r requirements.txt
-
-      # Run the tests (using MySQL connection details)
-      - name: Run tests
-        env:
-          DATABASE_NAME: restaurants
-          DATABASE_USERNAME: root
-          DATABASE_PASSWORD: root
-          DATABASE_ENDPOINT: 127.0.0.1 # Use 127.0.0.1 for TCP connection
-        run: |
-          python manage.py migrate
-          python manage.py test
-
-      # Re-check out the code
-      - uses: actions/checkout@v3
-
-      # Set up Python again (optional if needed for further steps)
-      - name: Set up Python
-        uses: actions/setup-python@v4
-
-      # Install any additional packages using the Makefile
-      - name: Install packages
         run: make install
+
+      # Wait for MySQL to be ready (using root credentials)
+      - name: Wait for MySQL to be ready
+        run: |
+          until mysql -u root -proot -e "SHOW DATABASES;" 2>/dev/null; do
+            echo "Waiting for MySQL to be ready..."
+            sleep 5
+          done
 
       # Format the code using Makefile
       - name: Format code
@@ -68,7 +53,7 @@ jobs:
       - name: Lint code
         run: make lint
 
-      # Run tests using the Makefile
+      # Run tests using Makefile
       - name: Run tests
         run: make test
 
