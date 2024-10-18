@@ -1,7 +1,7 @@
 
 # IDS 706 Miniproject 6 - Jingxuan Li
 
-This repository contains a project for database management and CRUD operations using SQLite, integrated with testing, logging, and a CI/CD pipeline for continuous integration and validation.
+This repository contains a project for database management and CRUD operations using Databricks, integrated with Complex SQL Query.
 
 ## Setup with VS Code and .devcontainer
 
@@ -17,7 +17,7 @@ Follow these steps to prepare and use your development environment:
 
 1. **Clone the Repository**:
    ```bash
-   git clone git@github.com:Jourdan0803/ids-706-w5-jingxuan-li.git
+   git clone git@github.com:Jourdan0803/ids-706-w6-jingxuan-li.git
    ```
 
 2. **Open in VS Code**:
@@ -48,32 +48,7 @@ To ensure your code modifications function correctly, a suite of tests is includ
 3. **Review Test Results**:
    Examine the output in the terminal to verify that all tests pass without errors.
 
-### Logging of Database Operations
 
-To monitor the progress of database operations, a log file `database_operations.log` is created. This file captures information about every successful operation and any encountered errors. Logs include details like table creation, data insertion, updates, deletions, and join operations. This helps with auditing, debugging, and maintaining a history of actions performed.
-
-#### Example Log Output
-
-
-
-## Continuous Integration (CI/CD Pipeline)
-
-The project is integrated with a GitHub Actions CI/CD pipeline that runs the tests on every push or pull request to the main branch. This ensures the stability of the codebase and automatically validates new changes.
-
-### Steps to Run CI/CD Pipeline
-
-1. **GitHub Actions Workflow**:
-   The CI/CD pipeline is defined in `.github/workflows/CICD.yml`. This file includes steps to:
-   - Set up the Python environment.
-   - Install required dependencies.
-   - Run (`main.py`), which includes CRUD operations on the `.db` file.
-
-2. **Pipeline Trigger**:
-   - **Push to Main Branch**: Every time you push code to the main branch.
-   - **Pull Request**: Every time a new pull request is opened against the main branch.
-
-3. **Log and Validate**:
-   You can check the GitHub Actions tab in your repository to see the logs of the pipeline run and ensure all tests pass successfully.
 
 ## Project Structure
 
@@ -88,23 +63,11 @@ Here is an overview of important files and directories in the repository:
 
 - **`Makefile`**: Defines scripts for common project tasks such as testing.
 - **`README.md`**: Provides project documentation.
-- **`mylib/lib.py`**: Contains the database functions (`connect_to_db`, `create_students_table`, `insert_students`, etc.).
+- **`mylib/lib.py`**: Contains the database functions
 - **`main.py`**: Main Python script to execute different database operations.
 - **`test_main.py`**: test script of main.py.
-- **`decriptive.ipynb`**: Jupyter Notebook for analysis and exploration.
 
-## Available Commands in `main.py`
 
-The following commands are available to interact with the SQLite database:
-
-- `create_students`: Creates the students table in the database.
-- `insert_students`: Inserts student records into the students table.
-- `read_students_with_grade <grade>`: Reads students with a specific grade.
-- `update_student_age <name> <increment>`: Updates a student's age by the given increment.
-- `delete_student <name>`: Deletes a student by name.
-- `create_classes`: Creates the classes table in the database.
-- `insert_classes`: Inserts records into the classes table.
-- `join_students_and_classes`: Performs a join between students and classes tables.
 
 ## How to Run
 
@@ -114,3 +77,60 @@ To run the `main.py` commands, use the following syntax:
 python main.py
 ```
 
+
+### SQL Query Explanation
+
+```sql
+SELECT 
+    r.restaurant,
+    r.country,
+    r.rank,
+    COUNT(rv.review_score) AS total_reviews,
+    AVG(rv.review_score) AS average_review_score,
+    MIN(rv.review_score) AS min_review_score,
+    MAX(rv.review_score) AS max_review_score
+FROM WorldsBestRestaurants r
+LEFT JOIN RestaurantReviews rv ON r.restaurant = rv.restaurant
+WHERE rv.review_year BETWEEN 2021 AND 2022
+GROUP BY r.restaurant, r.country, r.rank
+HAVING total_reviews > 1
+ORDER BY average_review_score DESC, r.rank ASC
+```
+
+### Explanation
+
+1. **SELECT Clause**:
+   - This part of the query specifies the columns to be returned in the result set:
+     - `r.restaurant`: The name of the restaurant.
+     - `r.country`: The country where the restaurant is located.
+     - `r.rank`: The rank of the restaurant.
+     - `COUNT(rv.review_score) AS total_reviews`: The total number of reviews for each restaurant.
+     - `AVG(rv.review_score) AS average_review_score`: The average score of the reviews.
+     - `MIN(rv.review_score) AS min_review_score`: The minimum review score.
+     - `MAX(rv.review_score) AS max_review_score`: The maximum review score.
+
+2. **FROM Clause**:
+   - The query retrieves data from two tables: `WorldsBestRestaurants` (aliased as `r`) and `RestaurantReviews` (aliased as `rv`).
+
+3. **LEFT JOIN**:
+   - This joins the `WorldsBestRestaurants` table with the `RestaurantReviews` table on the `restaurant` column. A LEFT JOIN ensures that all records from `WorldsBestRestaurants` are included, even if there are no matching records in `RestaurantReviews`.
+
+4. **WHERE Clause**:
+   - Filters the results to include only those reviews that were made between the years 2021 and 2022.
+
+5. **GROUP BY Clause**:
+   - Groups the results by `restaurant`, `country`, and `rank`. This is necessary for the aggregate functions (`COUNT`, `AVG`, `MIN`, `MAX`) to work correctly.
+
+6. **HAVING Clause**:
+   - Further filters the grouped results to include only those restaurants that have more than 1 reviews.
+
+7. **ORDER BY Clause**:
+   - Sorts the results first by `average_review_score` in descending order (highest scores first), and then by `rank` in ascending order (lowest ranks first).
+
+### Expected Results
+
+- The query will return a list of restaurants from the `WorldsBestRestaurants` table, along with their country, rank, and review statistics (total, average, minimum, and maximum scores) from the `RestaurantReviews` table.
+- Only restaurants with more than 1 reviews between 2021 and 2022 will be included in the results.
+- The results will be sorted by the average review score in descending order, so the highest-rated restaurants appear first. If two restaurants have the same average score, they will be sorted by their rank in ascending order.
+
+This query is useful for analyzing the performance and popularity of top restaurants based on customer reviews over a specific period.

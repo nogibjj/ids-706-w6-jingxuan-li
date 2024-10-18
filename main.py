@@ -1,7 +1,6 @@
 from mylib.lib import load_csv_to_databricks, execute_complex_query
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
 load_dotenv()
 
 
