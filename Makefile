@@ -24,5 +24,5 @@ generate:
 	git config --local user.name "GitHub Action"
 	git add .
 	git commit -m "finish"
-	git push origin main
+	git push
 all: install test format lint
