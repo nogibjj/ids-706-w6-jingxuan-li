@@ -1,5 +1,5 @@
 
-# IDS 706 Miniproject 2 - Jingxuan Li
+# IDS 706 Miniproject 6 - Jingxuan Li
 
 This repository contains a project for database management and CRUD operations using SQLite, integrated with testing, logging, and a CI/CD pipeline for continuous integration and validation.
 
