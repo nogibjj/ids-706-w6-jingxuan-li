@@ -16,8 +16,6 @@ container-lint:
 
 refactor: format lint
 
-deploy:
-	#deploy goes here
 
 
 generate:
@@ -27,4 +25,4 @@ generate:
 	git add .
 	git commit -m "finish"
 	git push origin main
-all: install test format lint deploy
+all: install test format lint

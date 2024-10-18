@@ -1,61 +1,43 @@
-# main.py
+from mylib.lib import load_csv_to_databricks, execute_complex_query
+from dotenv import load_dotenv
 
-from mylib.lib import load_csv_to_mysql, execute_complex_query
+# Load environment variables from .env file
+load_dotenv()
 
 
 def main():
     # Load WorldsBestRestaurants.csv
-    load_csv_to_mysql(
+    print("Starting the program...")
+    load_csv_to_databricks(
         csv_file_path="WorldsBestRestaurants.csv",
-        host="localhost",
-        user="root",
-        password="Jourdan980803..",
-        database="restaurants",
         table_name="WorldsBestRestaurants",
-        create_table_sql="""
-            CREATE TABLE IF NOT EXISTS WorldsBestRestaurants (
-                year INT,
-                `rank` INT,
-                restaurant VARCHAR(255),
-                location VARCHAR(255),
-                country VARCHAR(255),
-                lat DECIMAL(10, 6),
-                lng DECIMAL(10, 6)
-            );
+        columns_definition="""
+            id INT,
+            year INT,
+            `rank` INT,
+            restaurant STRING,
+            location STRING,
+            country STRING,
+            lat DOUBLE,
+            lng DOUBLE
         """,
-        insert_sql="""
-            INSERT INTO WorldsBestRestaurants \
-                (year, `rank`, restaurant, location, country, lat, lng)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+    )
+    print("Finished loading CSV to Databricks.")
+
+    # Load RestaurantReviews.csv
+    load_csv_to_databricks(
+        csv_file_path="RestaurantReviews.csv",
+        table_name="RestaurantReviews",
+        columns_definition="""
+            id INT,
+            restaurant STRING,
+            review_score DOUBLE,
+            review_year INT
         """,
     )
 
-    # Load RestaurantReviews.csv
-    load_csv_to_mysql(
-        csv_file_path="RestaurantReviews.csv",
-        host="localhost",
-        user="root",
-        password="Jourdan980803..",
-        database="restaurants",
-        table_name="RestaurantReviews",
-        create_table_sql="""
-            CREATE TABLE IF NOT EXISTS RestaurantReviews (
-                restaurant VARCHAR(255),
-                review_score DECIMAL(3, 2),
-                review_year INT
-            );
-        """,
-        insert_sql="""
-            INSERT INTO RestaurantReviews (restaurant, review_score, review_year)
-            VALUES (%s, %s, %s)
-        """,
-    )
-    execute_complex_query(
-        host="localhost",
-        user="root",
-        password="Jourdan980803..",
-        database="restaurants",
-    )
+    # Execute complex query
+    execute_complex_query()
 
 
 if __name__ == "__main__":

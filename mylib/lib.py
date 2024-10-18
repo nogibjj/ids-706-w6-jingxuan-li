@@ -1,92 +1,75 @@
+from dotenv import load_dotenv
+import os
 import pandas as pd
-import mysql.connector
-from mysql.connector import Error
+from databricks import sql
 
-def load_csv_to_mysql(csv_file_path, host, user, password, \
-                      database, table_name, create_table_sql, insert_sql):
+# Load environment variables from .env file
+load_dotenv()
+
+def load_csv_to_databricks(csv_file_path, table_name, columns_definition):
     """
-    Load data from a CSV file into a MySQL database table.
-
-    Parameters:
-    csv_file_path (str): The path to the CSV file.
-    host (str): MySQL server host.
-    user (str): MySQL username.
-    password (str): MySQL password.
-    database (str): Name of the database.
-    table_name (str): Name of the table to insert data into.
-    create_table_sql (str): The SQL query to create the table if it doesn't exist.
-    insert_sql (str): The SQL query to insert data into the table.
+    Load data from a CSV file into a Databricks table using environment variables.
     """
-    try:
-        # Load CSV file using pandas
-        df = pd.read_csv(csv_file_path)
+    print("Starting load_csv_to_databricks function...")
 
-        # Establish a connection to MySQL (without specifying the database)
-        connection = mysql.connector.connect(
-            host=host,
-            user=user,
-            password=password
-        )
-        
-        if connection.is_connected():
-            cursor = connection.cursor()
+    # Retrieve environment variables
+    server_hostname = os.getenv('SERVER_HOSTNAME')
+    http_path = os.getenv('HTTP_PATH')
+    access_token = os.getenv('DATABRICKS_KEY')
+    print(f"Environment variables loaded: SERVER_HOSTNAME={server_hostname}, \
+          HTTP_PATH={http_path}")
 
-            # Check if the database exists, create if not
-            cursor.execute(f"CREATE DATABASE IF NOT EXISTS {database};")
-            print(f"Database '{database}' checked/created successfully.")
-            
-            # Use the newly created or existing database
-            cursor.execute(f"USE {database};")
+    # Load CSV file using pandas
+    print(f"Loading CSV file from path: {csv_file_path}")
+    df = pd.read_csv(csv_file_path)
+    print(f"CSV file loaded. Number of rows: {len(df)}")
 
-            # Create table if not exists
-            cursor.execute(create_table_sql)
-            print(f"Table '{table_name}' checked/created successfully.")
-
-            # Insert data into the table
+    # Connect to Databricks SQL
+    print("Connecting to Databricks SQL...")
+    with sql.connect(server_hostname=server_hostname,
+                     http_path=http_path,
+                     access_token=access_token) as connection:
+        print("Connection established.")
+        cursor = connection.cursor()
+        # cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
+        print(f"Creating table {table_name} if it does not exist...")
+        cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name}\
+                        ({columns_definition});")
+        print(f"Table {table_name} is ready.")
+        cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+        row_count = cursor.fetchone()[0]
+        print(f"Current row count in {table_name}: {row_count}")
+        # Create table if not exists
+        if row_count == 0:
+        # Insert data into the table
+            print("Inserting data into the table...")
             for _, row in df.iterrows():
-                cursor.execute(insert_sql, tuple(row))
+                placeholders = (_,) + tuple(row)
+                cursor.execute(f"INSERT INTO {table_name} VALUES {placeholders}")
+                if _ % 100 == 0:
+                    print(f"Inserted {_} rows...")
 
-            # Commit the transaction
-            connection.commit()
-            print(f"Data from {csv_file_path} \
-                  has been successfully inserted into the database.")
-            result = cursor.fetchall()
-            return result
-        
-    except Error as e:
-        print(f"Error: {e}")
-    
-    finally:
-        if 'connection' in locals() and connection.is_connected():
-            cursor.close()
-            connection.close()
-            print("MySQL connection is closed.")
+            print(f"Data from {csv_file_path} has been successfully \
+                  inserted into the table '{table_name}'.")
+        return "Data inserted successfully"
 
-
-def execute_complex_query(host, user, password, database):
+def execute_complex_query():
     """
-    Execute a complex SQL query involving joins, aggregation, and sorting.
-    
-    Parameters:
-    host (str): MySQL server host.
-    user (str): MySQL username.
-    password (str): MySQL password.
-    database (str): Name of the database.
+    Execute a complex SQL query involving joins, aggregation, and sorting on Databricks.
     """
-    try:
-        # Establish a connection to MySQL
-        connection = mysql.connector.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=database
-        )
-        
-        if connection.is_connected():
-            cursor = connection.cursor()
+    # Retrieve environment variables
+    server_hostname = os.getenv('SERVER_HOSTNAME')
+    http_path = os.getenv('HTTP_PATH')
+    access_token = os.getenv('DATABRICKS_KEY')
 
-            # Complex SQL query with JOIN, GROUP BY, HAVING, and ORDER BY
-            query = """
+    # Connect to Databricks SQL
+    with sql.connect(server_hostname=server_hostname,
+                     http_path=http_path,
+                     access_token=access_token) as connection:
+        cursor = connection.cursor()
+
+        # Complex SQL query with JOIN, GROUP BY, HAVING, and ORDER BY
+        query = """
             SELECT 
                 r.restaurant,
                 r.country,
@@ -97,32 +80,19 @@ def execute_complex_query(host, user, password, database):
                 MAX(rv.review_score) AS max_review_score
             FROM WorldsBestRestaurants r
             LEFT JOIN RestaurantReviews rv ON r.restaurant = rv.restaurant
-            WHERE rv.review_year BETWEEN 2020 AND 2021
+            WHERE rv.review_year BETWEEN 2021 AND 2022
             GROUP BY r.restaurant, r.country, r.rank
-            HAVING total_reviews > 3
-            ORDER BY average_review_score DESC, r.rank ASC;
-            """
+            HAVING total_reviews > 1
+            ORDER BY average_review_score DESC, r.rank ASC
+        """
 
-            # Execute the query
-            cursor.execute(query)
+        # Execute the query
+        cursor.execute(query)
 
-            # Fetch all the results
-            result = cursor.fetchall()
+        # Fetch all the results
+        result = cursor.fetchall()
 
-            # Display the results
-            print("Restaurant | Country | Rank | Total Reviews | \
-                  Avg Review Score | Min Review Score | Max Review Score")
-            print("-" * 90)
-            for row in result:
-                print(f"{row[0]} | {row[1]} | \
-                      {row[2]} | {row[3]} | {row[4]} | {row[5]} | {row[6]}")
-            return result
-
-    except Error as e:
-        print(f"Error: {e}")
-    
-    finally:
-        if 'connection' in locals() and connection.is_connected():
-            cursor.close()
-            connection.close()
-            print("MySQL connection is closed.")
+        # Display the results
+        for row in result:
+            print(row)
+    return "Query executed successfully"

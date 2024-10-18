@@ -6,7 +6,8 @@ pytest-cov==4.0.0
 #pylint==2.15.3
 #rust based linter
 ruff==0.0.284
-mysql-connector-python
+databricks-sql-connector
+python-dotenv
 pandas
 csvkit
 
