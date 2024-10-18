@@ -1,4 +1,4 @@
-
+[![CI](https://github.com/nogibjj/ids-706-w6-jingxuan-li/actions/workflows/CICD.yml/badge.svg)](https://github.com/nogibjj/ids-706-w6-jingxuan-li/actions/workflows/CICD.yml)
 # IDS 706 Miniproject 6 - Jingxuan Li
 
 This repository contains a project for database management and CRUD operations using Databricks, integrated with Complex SQL Query.
